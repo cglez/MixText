@@ -222,8 +222,8 @@ def train(labeled_trainloader, unlabeled_trainloader, model, optimizer, schedule
 
         with torch.no_grad():
             # Predict labels for unlabeled data.
-            outputs_u = model(inputs_u)
-            outputs_u2 = model(inputs_u2)
+            #outputs_u = model(inputs_u)
+            #outputs_u2 = model(inputs_u2)
             outputs_ori = model(inputs_ori)
 
             # Based on translation qualities, choose different weights here.
@@ -231,8 +231,8 @@ def train(labeled_trainloader, unlabeled_trainloader, model, optimizer, schedule
             # For DBPedia: German: 1, Russian: 1, ori: 1
             # For IMDB: German: 0, Russian: 0, ori: 1
             # For Yahoo Answers: German: 1, Russian: 0, ori: 1 / German: 0, Russian: 0, ori: 1
-            p = (0 * torch.softmax(outputs_u, dim=1) + 0 * torch.softmax(outputs_u2,
-                                                                         dim=1) + 1 * torch.softmax(outputs_ori, dim=1)) / (1)
+            #p = (0 * torch.softmax(outputs_u, dim=1) + 0 * torch.softmax(outputs_u2, dim=1) + 1 * torch.softmax(outputs_ori, dim=1)) / (1)
+            p = torch.softmax(outputs_ori, dim=1)
             # Do a sharpen here.
             pt = p**(1/args.T)
             targets_u = pt / pt.sum(dim=1, keepdim=True)

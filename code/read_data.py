@@ -12,16 +12,18 @@ class Translator:
 
     def __init__(self, path, transform_type='BackTranslation'):
         # Pre-processed German data
-        with open(path + 'de_1.pkl', 'rb') as f:
-            self.de = pickle.load(f)
+        #with open(path + 'de_1.pkl', 'rb') as f:
+        #    self.de = pickle.load(f)
         # Pre-processed Russian data
-        with open(path + 'ru_1.pkl', 'rb') as f:
-            self.ru = pickle.load(f)
+        #with open(path + 'ru_1.pkl', 'rb') as f:
+        #    self.ru = pickle.load(f)
+        pass
 
     def __call__(self, ori, idx):
-        out1 = self.de[idx]
-        out2 = self.ru[idx]
-        return out1, out2, ori
+        #out1 = self.de[idx]
+        #out2 = self.ru[idx]
+        #return out1, out2, ori
+        return ori, ori, ori
 
 
 def get_data(data_path, n_labeled, n_unlabeled=10_000, max_seq_len=256, model='bert-base-uncased', train_aug=False, seed=0):
