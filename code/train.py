@@ -4,6 +4,7 @@ from timeit import default_timer as timer
 
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.utils.data as Data
 
 from read_data import *
 from mixtext import MixText
@@ -29,7 +30,7 @@ parser.add_argument('--gpu', default='0,1,2,3', type=str,
 parser.add_argument('--n-labeled', type=int, default=20,
                     help='number of labeled data')
 
-parser.add_argument('--un-labeled', default=5000, type=int,
+parser.add_argument('--un-labeled', default=10_000, type=int,
                     help='number of unlabeled data')
 
 parser.add_argument('--val-iteration', type=int, default=200,

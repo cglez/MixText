@@ -3,7 +3,6 @@ import pandas as pd
 import torch
 from torch.utils.data import Dataset
 from transformers import *
-import torch.utils.data as Data
 import pickle
 
 
@@ -24,7 +23,8 @@ class Translator:
         out2 = self.ru[idx]
         return out1, out2, ori
 
-def get_data(data_path, n_labeled_per_class, unlabeled_per_class=5000, max_seq_len=256, model='bert-base-uncased', train_aug=False):
+
+def get_data(data_path, n_labeled, n_unlabeled=10_000, max_seq_len=256, model='bert-base-uncased', train_aug=False, seed=0):
     """Read data, split the dataset, and build dataset for dataloaders.
 
     Arguments:
@@ -41,21 +41,21 @@ def get_data(data_path, n_labeled_per_class, unlabeled_per_class=5000, max_seq_l
     # Load the tokenizer for bert
     tokenizer = BertTokenizer.from_pretrained(model)
 
-    train_df = pd.read_csv(data_path+'train.csv', header=None)
-    test_df = pd.read_csv(data_path+'test.csv', header=None)
+    train_df = pd.read_csv(data_path+'/train.csv')
+    test_df = pd.read_csv(data_path+'/test.csv')
 
     # Here we only use the bodies and removed titles to do the classifications
-    train_labels = np.array([v-1 for v in train_df[0]])
-    train_text = np.array([v for v in train_df[2]])
+    _, train_labels = np.unique(train_df['label'], return_inverse=True)
+    train_text = train_df['text'].to_numpy()
 
-    test_labels = np.array([u-1 for u in test_df[0]])
-    test_text = np.array([v for v in test_df[2]])
+    _, test_labels = np.unique(test_df['label'], return_inverse=True)
+    test_text = test_df['text'].to_numpy()
 
     n_labels = max(test_labels) + 1
 
     # Split the labeled training set, unlabeled training set, development set
     train_labeled_idxs, train_unlabeled_idxs, val_idxs = train_val_split(
-        train_labels, n_labeled_per_class, unlabeled_per_class, n_labels)
+        train_labels, n_labeled, n_unlabeled, seed=seed)
 
     # Build the dataset class for each set
     train_labeled_dataset = loader_labeled(
@@ -73,7 +73,7 @@ def get_data(data_path, n_labeled_per_class, unlabeled_per_class=5000, max_seq_l
     return train_labeled_dataset, train_unlabeled_dataset, val_dataset, test_dataset, n_labels
 
 
-def train_val_split(labels, n_labeled_per_class, unlabeled_per_class, n_labels, seed=0):
+def train_val_split(labels, n_labeled, n_unlabeled, seed=0):
     """Split the original training set into labeled training set, unlabeled training set, development set
 
     Arguments:
@@ -90,37 +90,17 @@ def train_val_split(labels, n_labeled_per_class, unlabeled_per_class, n_labels, 
     """
     np.random.seed(seed)
     labels = np.array(labels)
-    train_labeled_idxs = []
-    train_unlabeled_idxs = []
-    val_idxs = []
 
-    for i in range(n_labels):
-        idxs = np.where(labels == i)[0]
-        np.random.shuffle(idxs)
-        if n_labels == 2:
-            # IMDB
-            train_pool = np.concatenate((idxs[:500], idxs[5500:-2000]))
-            train_labeled_idxs.extend(train_pool[:n_labeled_per_class])
-            train_unlabeled_idxs.extend(
-                idxs[500: 500 + 5000])
-            val_idxs.extend(idxs[-2000:])
-        elif n_labels == 10:
-            # DBPedia
-            train_pool = np.concatenate((idxs[:500], idxs[10500:-2000]))
-            train_labeled_idxs.extend(train_pool[:n_labeled_per_class])
-            train_unlabeled_idxs.extend(
-                idxs[500: 500 + unlabeled_per_class])
-            val_idxs.extend(idxs[-2000:])
-        else:
-            # Yahoo/AG News
-            train_pool = np.concatenate((idxs[:500], idxs[5500:-2000]))
-            train_labeled_idxs.extend(train_pool[:n_labeled_per_class])
-            train_unlabeled_idxs.extend(
-                idxs[500: 500 + 5000])
-            val_idxs.extend(idxs[-2000:])
-    np.random.shuffle(train_labeled_idxs)
-    np.random.shuffle(train_unlabeled_idxs)
-    np.random.shuffle(val_idxs)
+    available_idxs = np.arange(len(labels))
+    n_train, n_dev = int(n_labeled * 0.8), int(n_labeled * 0.2)
+
+    train_labeled_idxs = np.random.choice(available_idxs, size=n_train, replace=False)
+    available_idxs = np.setdiff1d(available_idxs, train_labeled_idxs)
+
+    val_idxs = np.random.choice(available_idxs, size=n_dev, replace=False)
+    available_idxs = np.setdiff1d(available_idxs, train_labeled_idxs)
+
+    train_unlabeled_idxs = np.random.choice(available_idxs, size=n_unlabeled, replace=False)
 
     return train_labeled_idxs, train_unlabeled_idxs, val_idxs
 
