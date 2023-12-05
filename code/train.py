@@ -72,6 +72,8 @@ parser.add_argument('--margin', default=0.7, type=float, metavar='N',
                     help='margin for hinge loss')
 parser.add_argument('--lambda-u-hinge', default=0, type=float,
                     help='weight for hinge loss term of unlabeled data')
+parser.add_argument('--seed', default=0, type=int,
+                    help='Random seed')
 
 args = parser.parse_args()
 
@@ -92,7 +94,7 @@ def main():
     global best_acc
     # Read dataset and build dataloaders
     train_labeled_set, train_unlabeled_set, val_set, test_set, n_labels = get_data(
-        args.data_path, args.n_labeled, args.un_labeled, model=args.model, train_aug=args.train_aug)
+        args.data_path, args.n_labeled, args.un_labeled, model=args.model, train_aug=args.train_aug, seed=args.seed)
     labeled_trainloader = Data.DataLoader(
         dataset=train_labeled_set, batch_size=args.batch_size, shuffle=True)
     unlabeled_trainloader = Data.DataLoader(
@@ -101,6 +103,8 @@ def main():
         dataset=val_set, batch_size=512, shuffle=False)
     test_loader = Data.DataLoader(
         dataset=test_set, batch_size=512, shuffle=False)
+
+    t0 = timer()
 
     # Define the model, set the optimizer
     model = MixText(n_labels, args.mix_option).to(device)
@@ -156,12 +160,14 @@ def main():
         print('Test acc:')
         print(test_accs)
 
-    print("Finished training!")
+    print("\nFinished training!")
     print('Best acc:')
     print(best_acc)
 
     print('Test acc:')
     print(test_accs)
+
+    print('Time:', timer() - t0)
 
 
 def train(labeled_trainloader, unlabeled_trainloader, model, optimizer, scheduler, criterion, epoch, n_labels, train_aug=False):
