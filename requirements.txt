@@ -1,0 +1,10 @@
+boto3
+botocore
+numpy
+pandas
+regex
+requests
+sacremoses
+six
+torch
+tqdm
