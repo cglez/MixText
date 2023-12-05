@@ -74,7 +74,7 @@ parser.add_argument('--lambda-u-hinge', default=0, type=float,
 
 args = parser.parse_args()
 
-os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
+#os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
 use_cuda = torch.cuda.is_available()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 n_gpu = torch.cuda.device_count()
@@ -102,7 +102,7 @@ def main():
         dataset=test_set, batch_size=512, shuffle=False)
 
     # Define the model, set the optimizer
-    model = MixText(n_labels, args.mix_option).cuda()
+    model = MixText(n_labels, args.mix_option).to(device)
     model = nn.DataParallel(model)
     optimizer = AdamW(
         [
@@ -206,10 +206,10 @@ def train(labeled_trainloader, unlabeled_trainloader, model, optimizer, schedule
         targets_x = torch.zeros(batch_size, n_labels).scatter_(
             1, targets_x.view(-1, 1), 1)
 
-        inputs_x, targets_x = inputs_x.cuda(), targets_x.cuda(non_blocking=True)
-        inputs_u = inputs_u.cuda()
-        inputs_u2 = inputs_u2.cuda()
-        inputs_ori = inputs_ori.cuda()
+        inputs_x, targets_x = inputs_x.to(device), targets_x.to(device, non_blocking=True)
+        inputs_u = inputs_u.to(device)
+        inputs_u2 = inputs_u2.to(device)
+        inputs_ori = inputs_ori.to(device)
 
         mask = []
 
@@ -303,7 +303,7 @@ def train(labeled_trainloader, unlabeled_trainloader, model, optimizer, schedule
                     idx2 = torch.randperm(int(length_b[i]) - length2 + 1)[0]
                     try:
                         mixed_input.append(
-                            torch.cat((input_a[i][idx1: idx1 + length1], torch.tensor([102]).cuda(), input_b[i][idx2:idx2 + length2], torch.tensor([0]*(256-1-length1-length2)).cuda()), dim=0).unsqueeze(0))
+                            torch.cat((input_a[i][idx1: idx1 + length1], torch.tensor([102]).to(device), input_b[i][idx2:idx2 + length2], torch.tensor([0]*(256-1-length1-length2)).to(device)), dim=0).unsqueeze(0))
                     except:
                         print(256 - 1 - length1 - length2,
                               idx2, length2, idx1, length1)
@@ -323,7 +323,7 @@ def train(labeled_trainloader, unlabeled_trainloader, model, optimizer, schedule
                 mixed_input = []
                 for i in range(input_a.size(0)):
                     mixed_input.append(
-                        torch.cat((input_a[i][:length_a[i]], torch.tensor([102]).cuda(), input_b[i][:length_b[i]], torch.tensor([0]*(512-1-int(length_a[i])-int(length_b[i]))).cuda()), dim=0).unsqueeze(0))
+                        torch.cat((input_a[i][:length_a[i]], torch.tensor([102]).to(device), input_b[i][:length_b[i]], torch.tensor([0]*(512-1-int(length_a[i])-int(length_b[i]))).to(device)), dim=0).unsqueeze(0))
 
                 mixed_input = torch.cat(mixed_input, dim=0)
                 logits = model(mixed_input, sent_size=512)
@@ -366,7 +366,7 @@ def validate(valloader, model, criterion, epoch, mode):
         correct = 0
 
         for batch_idx, (inputs, targets, length) in enumerate(valloader):
-            inputs, targets = inputs.cuda(), targets.cuda(non_blocking=True)
+            inputs, targets = inputs.to(device), targets.to(device, non_blocking=True)
             outputs = model(inputs)
             loss = criterion(outputs, targets)
 

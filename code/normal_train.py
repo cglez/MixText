@@ -65,8 +65,7 @@ def main():
     test_loader = Data.DataLoader(
         dataset=test_set, batch_size=512, shuffle=False)
 
-
-    model = ClassificationBert(n_labels).cuda()
+    model = ClassificationBert(n_labels).to(device)
     model = nn.DataParallel(model)
     optimizer = AdamW(
         [
@@ -111,7 +110,7 @@ def validate(valloader, model, criterion, epoch, mode):
         correct = 0
 
         for batch_idx, (inputs, targets, length) in enumerate(valloader):
-            inputs, targets = inputs.cuda(), targets.cuda(non_blocking=True)
+            inputs, targets = inputs.to(device), targets.to(device, non_blocking=True)
             outputs = model(inputs)
             loss = criterion(outputs, targets)
 
@@ -132,7 +131,7 @@ def train(labeled_trainloader, model, optimizer, criterion, epoch):
     model.train()
 
     for batch_idx, (inputs, targets, length) in enumerate(labeled_trainloader):
-        inputs, targets = inputs.cuda(), targets.cuda(non_blocking=True)
+        inputs, targets = inputs.to(device), targets.to(device, non_blocking=True)
         outputs = model(inputs)
         loss = criterion(outputs, targets)
 
