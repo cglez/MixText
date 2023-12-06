@@ -75,7 +75,7 @@ def get_data(data_path, n_labeled, n_unlabeled=10_000, max_seq_len=256, model='b
     return train_labeled_dataset, train_unlabeled_dataset, val_dataset, test_dataset, n_labels
 
 
-def train_val_split(labels, n_labeled, n_unlabeled, seed=0):
+def train_val_split(labels, n_labeled, n_unlabeled_per_class=5_000, seed=0):
     """Split the original training set into labeled training set, unlabeled training set, development set
 
     Arguments:
@@ -92,6 +92,8 @@ def train_val_split(labels, n_labeled, n_unlabeled, seed=0):
     """
     np.random.seed(seed)
     labels = np.array(labels)
+    classes = np.unique(labels)
+    n_classes = len(classes)
 
     available_idxs = np.arange(len(labels))
     n_train, n_dev = int(n_labeled * 0.8), int(n_labeled * 0.2)
@@ -102,7 +104,11 @@ def train_val_split(labels, n_labeled, n_unlabeled, seed=0):
     val_idxs = np.random.choice(available_idxs, size=n_dev, replace=False)
     available_idxs = np.setdiff1d(available_idxs, train_labeled_idxs)
 
-    train_unlabeled_idxs = np.random.choice(available_idxs, size=n_unlabeled, replace=False)
+    n_unlabeled = n_unlabeled_per_class * n_classes
+    if n_unlabeled > len(available_idxs):
+        train_unlabeled_idxs = available_idxs
+    else:
+        train_unlabeled_idxs = np.random.choice(available_idxs, size=n_unlabeled, replace=False)
 
     return train_labeled_idxs, train_unlabeled_idxs, val_idxs
 
