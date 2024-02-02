@@ -29,7 +29,6 @@ class BertModel4Mix(BertPreTrainedModel):
             self.encoder.layer[layer].attention.prune_heads(heads)
 
     def forward(self, input_ids,  input_ids2=None, l=None, mix_layer=1000, attention_mask=None, token_type_ids=None, position_ids=None, head_mask=None):
-
         if attention_mask is None:
             if input_ids2 is not None:
                 attention_mask2 = torch.ones_like(input_ids2)
@@ -41,16 +40,13 @@ class BertModel4Mix(BertPreTrainedModel):
                 token_type_ids2 = torch.zeros_like(input_ids2)
 
         extended_attention_mask = attention_mask.unsqueeze(1).unsqueeze(2)
-
         extended_attention_mask = extended_attention_mask.to(
             dtype=next(self.parameters()).dtype)  # fp16 compatibility
         extended_attention_mask = (1.0 - extended_attention_mask) * -10000.0
 
         if input_ids2 is not None:
-
             extended_attention_mask2 = attention_mask2.unsqueeze(
                 1).unsqueeze(2)
-
             extended_attention_mask2 = extended_attention_mask2.to(
                 dtype=next(self.parameters()).dtype)  # fp16 compatibility
             extended_attention_mask2 = (

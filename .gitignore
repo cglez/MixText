@@ -1,5 +1,5 @@
-scripts/
-output/
-data/
-~data/yahoo_answers_csv/
+/scripts/
+/output/
+/data/
+~/data/yahoo_answers_csv/
 __pycache__/

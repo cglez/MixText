@@ -3,7 +3,6 @@ import pandas as pd
 import torch
 from torch.utils.data import Dataset
 from transformers import *
-import pickle
 
 
 class Translator:
@@ -11,6 +10,7 @@ class Translator:
     """
 
     def __init__(self, path, transform_type='BackTranslation'):
+        #import pickle
         # Pre-processed German data
         #with open(path + 'de_1.pkl', 'rb') as f:
         #    self.de = pickle.load(f)

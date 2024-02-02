@@ -1,5 +1,6 @@
 import argparse
 import math
+import os
 from timeit import default_timer as timer
 
 import torch.nn as nn
@@ -77,9 +78,9 @@ parser.add_argument('--seed', default=0, type=int,
 
 args = parser.parse_args()
 
-#os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
+os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
 use_cuda = torch.cuda.is_available()
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda" if use_cuda else "cpu")
 n_gpu = torch.cuda.device_count()
 print("GPU num: ", n_gpu)
 

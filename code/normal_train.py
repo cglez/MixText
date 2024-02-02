@@ -2,6 +2,7 @@ import argparse
 import os
 
 import torch.nn as nn
+import torch.utils.data as Data
 
 from read_data import *
 from normal_bert import ClassificationBert
@@ -41,8 +42,6 @@ parser.add_argument('--model', type=str, default='bert-base-uncased',
 parser.add_argument('--data-path', type=str, default='yahoo_answers_csv/',
                     help='path to data folders')
 
-
-
 args = parser.parse_args()
 
 os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
@@ -73,7 +72,6 @@ def main():
             {"params": model.module.linear.parameters(), "lr": args.lrlast},
         ])
 
-
     criterion = nn.CrossEntropyLoss()
 
     test_accs = []
@@ -94,8 +92,7 @@ def main():
             print("epoch {}, test acc {},test loss {}".format(
                 epoch, test_acc, test_loss))
 
-    print('Best val_acc:')
-    print(best_acc)
+    print('Best val_acc:', best_acc)
 
     print('Test acc:')
     print(test_accs)
@@ -106,7 +103,6 @@ def validate(valloader, model, criterion, epoch, mode):
     with torch.no_grad():
         loss_total = 0
         total_sample = 0
-        acc_total = 0
         correct = 0
 
         for batch_idx, (inputs, targets, length) in enumerate(valloader):
