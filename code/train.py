@@ -19,6 +19,7 @@ parser.add_argument('--batch-size', default=32, type=int, metavar='N',
                     help='train batchsize')
 parser.add_argument('--batch-size-u', default=32, type=int, metavar='N',
                     help='train batchsize')
+parser.add_argument('--max-length', default=512, type=int, help='Max. sequence length')
 
 parser.add_argument('--lrmain', '--learning-rate-bert', default=5e-5, type=float,
                     metavar='LR', help='initial learning rate for bert')
@@ -95,7 +96,8 @@ def main():
     global best_acc
     # Read dataset and build dataloaders
     train_labeled_set, train_unlabeled_set, val_set, test_set, n_labels = get_data(
-        args.data_path, args.n_labeled, args.un_labeled, model=args.model, train_aug=args.train_aug, seed=args.seed)
+        args.data_path, args.n_labeled, args.un_labeled, max_seq_len=args.max_length, model=args.model,
+        train_aug=args.train_aug, seed=args.seed)
     labeled_trainloader = Data.DataLoader(
         dataset=train_labeled_set, batch_size=args.batch_size, shuffle=True)
     unlabeled_trainloader = Data.DataLoader(
