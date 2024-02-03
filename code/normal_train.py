@@ -50,11 +50,11 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 n_gpu = torch.cuda.device_count()
 print("gpu num: ", n_gpu)
 
-best_acc = 0
+best_score = 0
 
 
 def main():
-    global best_acc
+    global best_score
     train_labeled_set, train_unlabeled_set, val_set, test_set, n_labels = get_data(
         args.data_path, args.n_labeled)
     labeled_trainloader = Data.DataLoader(

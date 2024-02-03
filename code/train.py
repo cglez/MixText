@@ -6,6 +6,8 @@ from timeit import default_timer as timer
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.data as Data
+from sklearn.metrics import precision_recall_curve, auc
+from tqdm import tqdm
 
 from read_data import *
 from mixtext import MixText
@@ -20,6 +22,7 @@ parser.add_argument('--batch-size', default=32, type=int, metavar='N',
 parser.add_argument('--batch-size-u', default=32, type=int, metavar='N',
                     help='train batchsize')
 parser.add_argument('--max-length', default=512, type=int, help='Max. sequence length')
+parser.add_argument('--metric', default='acc', type=str, help='Scoring metric')
 
 parser.add_argument('--lrmain', '--learning-rate-bert', default=5e-5, type=float,
                     metavar='LR', help='initial learning rate for bert')
@@ -85,7 +88,7 @@ device = torch.device("cuda" if use_cuda else "cpu")
 n_gpu = torch.cuda.device_count()
 print("GPU num: ", n_gpu)
 
-best_acc = 0
+best_score = 0
 total_steps = 0
 flag = 0
 print('Whether mix: ', args.mix_option)
@@ -93,7 +96,7 @@ print("Mix layers sets: ", args.mix_layers_set)
 
 
 def main():
-    global best_acc
+    global best_score
     # Read dataset and build dataloaders
     train_labeled_set, train_unlabeled_set, val_set, test_set, n_labels = get_data(
         args.data_path, args.n_labeled, args.un_labeled, max_seq_len=args.max_length, model=args.model,
@@ -127,7 +130,7 @@ def main():
     train_criterion = SemiLoss()
     criterion = nn.CrossEntropyLoss()
 
-    test_accs = []
+    test_scores = []
 
     # Start training
     for epoch in range(args.epochs):
@@ -141,36 +144,27 @@ def main():
         #                        model,  criterion, epoch, mode='Train Stats')
         #print("epoch {}, train acc {}".format(epoch, train_acc))
 
-        val_loss, val_acc = validate(
-            val_loader, model, criterion, epoch, mode='Valid Stats')
+        val_loss, val_score = validate(
+            val_loader, model, criterion, epoch, mode='Valid Stats', metric=args.metric)
 
-        print("epoch {}, val acc {}, val_loss {}".format(
-            epoch, val_acc, val_loss))
+        print(f"epoch {epoch}, val {args.metric} {val_score}, val_loss {val_loss}")
 
-        if val_acc >= best_acc:
-            best_acc = val_acc
-            test_loss, test_acc = validate(
-                test_loader, model, criterion, epoch, mode='Test Stats ')
-            test_accs.append(test_acc)
-            print("epoch {}, test acc {},test loss {}".format(
-                epoch, test_acc, test_loss))
+        if val_score >= best_score:
+            best_score = val_score
+            test_loss, test_score = validate(
+                test_loader, model, criterion, epoch, mode='Test Stats', metric=args.metric)
+            test_scores.append(test_score)
+            print(f"epoch {epoch}, test {args.metric} {test_score}, test loss {test_loss}")
 
         print('Epoch: ', epoch)
-
-        print('Best acc:')
-        print(best_acc)
-
-        print('Test acc:')
-        print(test_accs)
+        print(f'Best {args.metric}:', best_score)
+        print(f'Test {args.metric}:', test_scores, flush=True)
 
     print("\nFinished training!")
-    print('Best acc:')
-    print(best_acc)
-
-    print('Test acc:')
-    print(test_accs)
-
-    print('Time:', timer() - t0)
+    print('Data:', args.data_path, ', Budget:', args.n_labeled)
+    print(f'Best {args.metric}:', best_score)
+    print(f'Test {args.metric}:', test_scores)
+    print('Time:', timer() - t0, flush=True)
 
 
 def train(labeled_trainloader, unlabeled_trainloader, model, optimizer, scheduler, criterion, epoch, n_labels, train_aug=False):
@@ -367,35 +361,47 @@ def train(labeled_trainloader, unlabeled_trainloader, model, optimizer, schedule
                 epoch, batch_idx, loss.item(), Lx.item(), Lu.item(), Lu2.item()))
 
 
-def validate(valloader, model, criterion, epoch, mode):
+def validate(valloader, model, criterion, epoch, mode, metric='acc'):
     model.eval()
     with torch.no_grad():
         loss_total = 0
         total_sample = 0
-        acc_total = 0
         correct = 0
+        labels = []
+        probs = None
 
-        for batch_idx, (inputs, targets, length) in enumerate(valloader):
+        for batch_idx, (inputs, targets, length) in enumerate(tqdm(valloader, desc=mode)):
             inputs, targets = inputs.to(device), targets.to(device, non_blocking=True)
+            labels += targets.tolist()
             outputs = model(inputs)
             loss = criterion(outputs, targets)
+            if probs is None:
+                probs = torch.softmax(outputs.data, dim=1).cpu()
+            else:
+                batch_probs = torch.softmax(outputs.data, dim=1).cpu()
+                probs = torch.concat([probs, batch_probs])
 
             _, predicted = torch.max(outputs.data, 1)
 
             if batch_idx == 0:
-                print("Sample some true labeles and predicted labels")
+                print("Sample some true labels and predicted labels")
                 print(predicted[:20])
                 print(targets[:20])
 
-            correct += (np.array(predicted.cpu()) ==
-                        np.array(targets.cpu())).sum()
+            correct += (predicted.cpu().numpy() == targets.cpu().numpy()).sum()
             loss_total += loss.item() * inputs.shape[0]
             total_sample += inputs.shape[0]
 
         acc_total = correct/total_sample
+        if metric == 'acc':
+            score = acc_total
+        elif metric == 'auc_1':
+            probs_1 = probs[:, 1].numpy()
+            precisions_1, recalls_1, _ = precision_recall_curve(y_true=labels, probas_pred=probs_1, pos_label=1)
+            score = auc(recalls_1, precisions_1)
         loss_total = loss_total/total_sample
 
-    return loss_total, acc_total
+    return loss_total, score
 
 
 def linear_rampup(current, rampup_length=args.epochs):
