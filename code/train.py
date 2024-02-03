@@ -194,7 +194,7 @@ def train(labeled_trainloader, unlabeled_trainloader, model, optimizer, schedule
                 inputs_x, targets_x, inputs_x_length = labeled_train_iter.next()
             except:
                 labeled_train_iter = iter(labeled_trainloader)
-                inputs_x, targets_x, inputs_x_length = labeled_train_iter.next()
+                inputs_x, targets_x, inputs_x_length = next(labeled_train_iter)
         else:
             try:
                 (inputs_x, inputs_x_aug), (targets_x, _), (inputs_x_length,
@@ -204,12 +204,12 @@ def train(labeled_trainloader, unlabeled_trainloader, model, optimizer, schedule
                 (inputs_x, inputs_x_aug), (targets_x, _), (inputs_x_length,
                                                            inputs_x_length_aug) = labeled_train_iter.next()
         try:
-            (inputs_u, inputs_u2,  inputs_ori), (length_u,
-                                                 length_u2,  length_ori) = unlabeled_train_iter.next()
+            (_inputs_u, _inputs_u2,  inputs_ori), (_length_u,
+                                                 _length_u2,  length_ori) = unlabeled_train_iter.next()
         except:
             unlabeled_train_iter = iter(unlabeled_trainloader)
-            (inputs_u, inputs_u2, inputs_ori), (length_u,
-                                                length_u2, length_ori) = unlabeled_train_iter.next()
+            (_inputs_u, _inputs_u2, inputs_ori), (_length_u,
+                                                _length_u2, length_ori) = next(unlabeled_train_iter)
 
         batch_size = inputs_x.size(0)
         batch_size_2 = inputs_ori.size(0)
@@ -217,8 +217,8 @@ def train(labeled_trainloader, unlabeled_trainloader, model, optimizer, schedule
             1, targets_x.view(-1, 1), 1)
 
         inputs_x, targets_x = inputs_x.to(device), targets_x.to(device, non_blocking=True)
-        inputs_u = inputs_u.to(device)
-        inputs_u2 = inputs_u2.to(device)
+        #inputs_u = inputs_u.to(device)
+        #inputs_u2 = inputs_u2.to(device)
         inputs_ori = inputs_ori.to(device)
 
         mask = []
@@ -262,21 +262,21 @@ def train(labeled_trainloader, unlabeled_trainloader, model, optimizer, schedule
 
         if not train_aug:
             all_inputs = torch.cat(
-                [inputs_x, inputs_u, inputs_u2, inputs_ori, inputs_ori], dim=0)
+                [inputs_x, inputs_ori, inputs_ori], dim=0)
 
             all_lengths = torch.cat(
-                [inputs_x_length, length_u, length_u2, length_ori, length_ori], dim=0)
+                [inputs_x_length, length_ori, length_ori], dim=0)
 
             all_targets = torch.cat(
-                [targets_x, targets_u, targets_u, targets_u, targets_u], dim=0)
+                [targets_x, targets_u, targets_u], dim=0)
 
         else:
             all_inputs = torch.cat(
-                [inputs_x, inputs_x_aug, inputs_u, inputs_u2, inputs_ori], dim=0)
+                [inputs_x, inputs_x_aug, inputs_ori], dim=0)
             all_lengths = torch.cat(
-                [inputs_x_length, inputs_x_length, length_u, length_u2, length_ori], dim=0)
+                [inputs_x_length, inputs_x_length, length_ori], dim=0)
             all_targets = torch.cat(
-                [targets_x, targets_x, targets_u, targets_u, targets_u], dim=0)
+                [targets_x, targets_x, targets_u], dim=0)
 
         if args.separate_mix:
             idx1 = torch.randperm(batch_size)
