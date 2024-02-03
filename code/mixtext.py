@@ -155,29 +155,27 @@ class BertEncoder4Mix(nn.Module):
 class MixText(nn.Module):
     def __init__(self, num_labels=2, mix_option=False):
         super(MixText, self).__init__()
+        config = BertConfig()
 
         if mix_option:
             self.bert = BertModel4Mix.from_pretrained('bert-base-uncased')
         else:
             self.bert = BertModel.from_pretrained('bert-base-uncased')
 
-        self.linear = nn.Sequential(nn.Linear(768, 128),
-                                    nn.Tanh(),
-                                    nn.Linear(128, num_labels))
+        #self.linear = nn.Sequential(nn.Linear(768, 128),
+        #                            nn.Tanh(),
+        #                            nn.Linear(128, num_labels))
+        self.dropout = nn.Dropout(config.hidden_dropout_prob)
+        self.linear = nn.Linear(config.hidden_size, num_labels)
 
     def forward(self, x, x2=None, l=None, mix_layer=1000):
-
         if x2 is not None:
             all_hidden, pooler = self.bert(x, x2, l, mix_layer)
-
-            pooled_output = torch.mean(all_hidden, 1)
-
         else:
             all_hidden, pooler = self.bert(x)
-
-            pooled_output = torch.mean(all_hidden, 1)
-
+        #pooled_output = torch.mean(all_hidden, 1)
+        pooled_output = pooler
+        pooled_output = self.dropout(pooled_output)
         predict = self.linear(pooled_output)
 
         return predict
-
