@@ -26,7 +26,7 @@ class Translator:
         return ori, ori, ori
 
 
-def get_data(data_path, n_labeled, n_unlabeled=10_000, max_seq_len=256, model='bert-base-uncased', train_aug=False, seed=0):
+def get_data(data_path, n_labeled, unlabeled_per_class=None, max_seq_len=256, model='bert-base-uncased', train_aug=False, seed=0):
     """Read data, split the dataset, and build dataset for dataloaders.
 
     Arguments:
@@ -57,7 +57,7 @@ def get_data(data_path, n_labeled, n_unlabeled=10_000, max_seq_len=256, model='b
 
     # Split the labeled training set, unlabeled training set, development set
     train_labeled_idxs, train_unlabeled_idxs, val_idxs = train_val_split(
-        train_labels, n_labeled, n_unlabeled, seed=seed)
+        train_labels, n_labeled, unlabeled_per_class, seed=seed)
 
     # Build the dataset class for each set
     train_labeled_dataset = loader_labeled(
@@ -75,7 +75,7 @@ def get_data(data_path, n_labeled, n_unlabeled=10_000, max_seq_len=256, model='b
     return train_labeled_dataset, train_unlabeled_dataset, val_dataset, test_dataset, n_labels
 
 
-def train_val_split(labels, n_labeled, n_unlabeled_per_class=5_000, seed=0):
+def train_val_split(labels, n_labeled, n_unlabeled_per_class=None, seed=0):
     """Split the original training set into labeled training set, unlabeled training set, development set
 
     Arguments:
@@ -102,10 +102,10 @@ def train_val_split(labels, n_labeled, n_unlabeled_per_class=5_000, seed=0):
     available_idxs = np.setdiff1d(available_idxs, train_labeled_idxs)
 
     val_idxs = np.random.choice(available_idxs, size=n_dev, replace=False)
-    available_idxs = np.setdiff1d(available_idxs, train_labeled_idxs)
+    available_idxs = np.setdiff1d(available_idxs, val_idxs)
 
-    n_unlabeled = n_unlabeled_per_class * n_classes
-    if n_unlabeled > len(available_idxs):
+    n_unlabeled = n_unlabeled_per_class * n_classes if n_unlabeled_per_class is not None else None
+    if n_unlabeled is None or n_unlabeled > len(available_idxs):
         train_unlabeled_idxs = available_idxs
     else:
         train_unlabeled_idxs = np.random.choice(available_idxs, size=n_unlabeled, replace=False)
