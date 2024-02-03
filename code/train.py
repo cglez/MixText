@@ -13,22 +13,22 @@ from mixtext import MixText
 
 parser = argparse.ArgumentParser(description='PyTorch MixText')
 
-parser.add_argument('--epochs', default=50, type=int, metavar='N',
+parser.add_argument('--epochs', default=20, type=int, metavar='N',
                     help='number of total epochs to run')
-parser.add_argument('--batch-size', default=4, type=int, metavar='N',
+parser.add_argument('--batch-size', default=32, type=int, metavar='N',
                     help='train batchsize')
-parser.add_argument('--batch-size-u', default=24, type=int, metavar='N',
+parser.add_argument('--batch-size-u', default=32, type=int, metavar='N',
                     help='train batchsize')
 
-parser.add_argument('--lrmain', '--learning-rate-bert', default=0.00001, type=float,
+parser.add_argument('--lrmain', '--learning-rate-bert', default=5e-5, type=float,
                     metavar='LR', help='initial learning rate for bert')
-parser.add_argument('--lrlast', '--learning-rate-model', default=0.001, type=float,
+parser.add_argument('--lrlast', '--learning-rate-model', default=0.0005, type=float,
                     metavar='LR', help='initial learning rate for models')
 
-parser.add_argument('--gpu', default='0,1,2,3', type=str,
+parser.add_argument('--gpu', default='0', type=str,
                     help='id(s) for CUDA_VISIBLE_DEVICES')
 
-parser.add_argument('--n-labeled', type=int, default=20,
+parser.add_argument('--n-labeled', type=int, default=100,
                     help='number of labeled data')
 
 parser.add_argument('--un-labeled', default=None, type=int,
@@ -67,7 +67,7 @@ parser.add_argument('--lambda-u', default=1, type=float,
 parser.add_argument('--T', default=0.5, type=float,
                     help='temperature for sharpen function')
 
-parser.add_argument('--temp-change', default=1000000, type=int)
+parser.add_argument('--temp-change', default=1_000_000, type=int)
 
 parser.add_argument('--margin', default=0.7, type=float, metavar='N',
                     help='margin for hinge loss')
