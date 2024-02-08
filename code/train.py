@@ -161,7 +161,7 @@ def main():
         print(f'Test {args.metric}:', test_scores, flush=True)
 
     print("\nFinished training!")
-    print('Data:', args.data_path, ', Budget:', args.n_labeled)
+    print('Data:', args.data_path, ', Budget:', args.n_labeled, 'Seed:', args.seed)
     print(f'Best {args.metric}:', best_score)
     print(f'Test {args.metric}:', test_scores)
     print('Time:', timer() - t0, flush=True)
